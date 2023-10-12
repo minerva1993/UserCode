@@ -17,8 +17,6 @@ for infile in list_to_process:
     if not infile.endswith('.root'): continue
     print ('processing... ' + infile)
 
-    org_file = TFile.Open(os.path.join(rootDir, infile), 'Read')
-
     try: os.remove(os.path.join(outDir, infile))
     except: pass
     shutil.copyfile(os.path.join(rootDir, infile), os.path.join(outDir, infile))
@@ -26,15 +24,21 @@ for infile in list_to_process:
     out_file.cd('writeNTuple')
     gDirectory.Delete('NTuple;1')
 
-    org_tree = org_file.Get('writeNTuple/NTuple')
-    out_tree = TTree("NTuple","NTuple")
-    nevt = org_tree.GetEntries()
+    org_ch = TChain('writeNTuple/NTuple')
+    org_ch.AddFile(os.path.join(rootDir, infile))
+    out_tree = org_ch.CloneTree(0)
+
+    #org_ch.SetBranchStatus("*", 0)
+    #org_ch.SetBranchStatus("runNumber", 1);
+    #org_ch.SetBranchStatus("lumiBlock", 1);
+
+    nevt = org_ch.GetEntries()
     print("Processing " + str(nevt) + " events")
 
     for i in range(nevt):
-        org_tree.GetEntry(i)
-        run = org_tree.runNumber
-        lumi = org_tree.lumiBlock
+        org_ch.GetEntry(i)
+        run = org_ch.runNumber
+        lumi = org_ch.lumiBlock
 
         if str(run) in data:
             all_lumi = []
